@@ -1,7 +1,7 @@
 {
     "name":  "dsh-pet-bridge",
-    "version":  "1.0.2",
-    "description":  "Bridges DeepSeek Harness agent state (thinking / working / done / error) into a Live2D desktop pet\u0027s state file, so the pet\u0027s expression follows what the agent is actually doing.",
+    "version":  "1.1.0",
+    "description":  "Publishes DeepSeek Harness agent activity into a state file a desktop pet can read, so the pet shows what the agent is doing right now.",
     "type":  "module",
     "main":  "index.js",
     "license":  "MIT",
