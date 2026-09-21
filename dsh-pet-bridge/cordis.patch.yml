@@ -1,0 +1,18 @@
+# dsh-pet-bridge bundle patch
+#
+# Inserts the bridge into a profile's layer stack. The `config` block is
+# passed straight to `apply(ctx, config)` in index.js.
+#
+# statePath  — absolute path of the desktop pet's state file. The pet polls
+#              this file and updates its bubble + Live2D expression.
+# title      — the bubble's header line.
+# minGapMs   — minimum gap between file writes, so a burst of tool calls
+#              cannot thrash the disk.
+
+- insert:
+    - id: pet-bridge
+      name: dsh-pet-bridge
+      config:
+        statePath: 'F:\碧蓝航线blender\实验性天空\DSH桌宠\pet_state.json'
+        title: 'DSH Agent'
+        minGapMs: 200
