@@ -15,20 +15,37 @@
 
 事件 → 状态映射：
 
-| `event.type` | 条件 | 状态 |
-|---|---|---|
-| `turn/start` | — | `thinking` |
-| `tool/call` | 工具是 `ask_user_question` | `waiting` |
-| `tool/call` | 其他工具 | `working` |
-| `tool/result` | — | `working` |
-| `approval/asked` | — | `waiting` |
-| `turn/end` | `reason.kind === 'completed'` | `done` |
-| `turn/end` | `error` / `max-tokens` / `timeout` | `error` |
-| `turn/end` | `blocked` | `waiting` |
-| `turn/end` | 其他（aborted 等） | **清空回 `idle`** |
+| `event.type` | 条件 | 状态 | 鲸鱼娘的反应 |
+|---|---|---|---|
+| `turn/start` | — | `thinking` | 呆呆眼 |
+| `tool/call` | `ask_user_question` | `waiting` | 问号 |
+| `tool/call` | `read` `glob` `grep` `read_image` 等 | `reading` | 呆呆眼 + **自动戴眼镜** |
+| `tool/call` | `write` `edit` `blender_python` | `writing` | 调皮 + **自动贴贴纸** |
+| `tool/call` | `pwsh` `blender_render` `blender_export` 等 | `running` | 流汗 + 吹泡泡 |
+| `tool/call` | `web_search` `web_fetch` | `searching` | 星星眼 + **自动戴眼镜** |
+| `tool/call` | `subagent` `workflow` `ralph` | `delegating` | 开心兴奋 + 快速自拍 |
+| `tool/call` | `todo_write` | `planning` | 感叹号 + 开盖 |
+| `tool/call` | 其他任何工具 | `working` | 流汗 + 吹泡泡 |
+| `tool/result` | 同一工具连续失败 2 次 | `struggling` | 脸红 + 挤番茄酱 |
+| `tool/result` | 连续 3 次无错 | `proud` | 爱心眼 + 自拍 |
+| *(定时)* | 单轮持续超过 90 秒 | `longtask` | 闭眼口水 |
+| `approval/asked` | — | `waiting` | 问号 |
+| `turn/end` | `reason.kind === 'completed'` | `done` | 开心兴奋 + 自拍 |
+| `turn/end` | `error` / `max-tokens` / `timeout` | `error` | 晕晕 + 喷水 |
+| `turn/end` | `blocked` | `waiting` | 问号 |
+| `turn/end` | `aborted` / `interrupted` / `cancelled` | `interrupted` | 吐魂 + 喷水 |
+| `turn/end` | 其他 | **清空回 `idle`** | 素颜 |
 
-最后一行是关键：**回合被中断时必须清回空闲**，否则宠物会永远卡在
-"工作中"。这是 `dsh-pet` 项目踩过的真实坑，这里沿用同样的处理。
+两个关键点：
+
+1. **`tool/result` 本身不改变状态**（只更新气泡细节）。否则一个回合里
+   "写文件 → 跑命令 → 写文件" 会让状态反复跌回通用的 `working`，
+   表情闪个不停。
+2. **回合被中断时必须释放**，这里映射到 `interrupted` 而不是硬清空 ——
+   既不会永远卡在"工作中"，又能让鲸鱼娘演一下"被打断了"。
+
+旧版桌宠（只认 6 个状态）遇到这些新状态会退回默认表情，**不会报错**，
+所以桥接和桌宠可以分开升级。
 
 写文件有两层节流（状态去重 + `minGapMs` 最小间隔），
 工具连续调用不会把磁盘打爆。
@@ -40,12 +57,16 @@
 {
   "title":    "DSH Agent",
   "bubble":   "正在执行 read …",
-  "status":   "working",
+  "status":   "reading",
   "progress": 0.6
 }
 ```
 
-`status` 取值：`idle` | `thinking` | `working` | `waiting` | `done` | `error`
+`status` 取值（16 个）：
+
+`idle` `thinking` `waiting` `working` `reading` `writing` `running`
+`searching` `delegating` `planning` `proud` `struggling` `longtask`
+`done` `error` `interrupted`
 
 
 ## 安装
@@ -82,6 +103,7 @@ dsh --profile web --dump-config
 | `statePath` | （必填） | 状态文件绝对路径，桌宠读它 |
 | `title` | `DSH Agent` | 气泡抬头 |
 | `minGapMs` | `200` | 两次写文件的最小间隔（毫秒） |
+| `longTaskMs` | `90000` | 单轮持续多久后切到 `longtask`（毫秒） |
 
 
 ## 依赖
